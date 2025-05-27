@@ -23,24 +23,32 @@
     }
     
     body {
-      background-color: #f5f5f5;
-      color: var(--dark);
-      line-height: 1.6;
-      padding: 20px;
-    }
+  background-color: #f5f5f5;
+  background-image: url('https://i.ibb.co/rGRnfHww/4766d87672bdb88e5bd70ba1bfb1c922.jpg'); /* replace with your image path */
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  color: var(--dark);
+  line-height: 1.6;
+  padding: 20px;
+}
     
     .container {
       max-width: 800px;
-      margin: 0 auto;
-      background: white;
+      margin: 0 auto;    
+      background: rgba(255, 255, 255, 0.9); /* semi-transparent white */
       border-radius: 8px;
       box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
       padding: 30px;
     }
     
-    h1 {
+    
+    h1, h2, h3 {
       color: var(--primary);
       margin-bottom: 20px;
+    }
+    
+    h1 {
       text-align: center;
     }
     
@@ -92,6 +100,11 @@
       background-color: #3367d6;
     }
     
+    button:disabled {
+      background-color: #cccccc;
+      cursor: not-allowed;
+    }
+    
     .status {
       margin-top: 20px;
       padding: 15px;
@@ -113,13 +126,18 @@
       display: block;
     }
     
+    .info {
+      background-color: rgba(66, 133, 244, 0.1);
+      border-left: 4px solid var(--primary);
+      color: var(--primary);
+      display: block;
+    }
+    
     .bot-list {
       margin-top: 40px;
     }
     
     .bot-list h2 {
-      color: var(--primary);
-      margin-bottom: 15px;
       padding-bottom: 10px;
       border-bottom: 1px solid #eee;
     }
@@ -185,6 +203,94 @@
       margin: 0 auto 10px;
     }
     
+    .credit-counter {
+      background-color: rgba(251, 188, 5, 0.1);
+      border-left: 4px solid var(--warning);
+      color: var(--dark);
+      padding: 10px;
+      margin-bottom: 20px;
+      border-radius: 4px;
+      text-align: center;
+      font-weight: 500;
+    }
+    
+    .tutorial {
+      background-color: rgba(251, 188, 5, 0.05);
+      border-left: 4px solid var(--warning);
+      padding: 20px;
+      margin-bottom: 30px;
+      border-radius: 4px;
+    }
+    
+    .tutorial h3 {
+      margin-top: 0;
+      color: var(--warning);
+    }
+    
+    .tutorial-step {
+      margin-bottom: 20px;
+    }
+    
+    .tutorial-step h4 {
+      margin-bottom: 10px;
+      color: var(--primary);
+    }
+    
+    .tutorial-step ol, .tutorial-step ul {
+      padding-left: 20px;
+    }
+    
+    .tutorial-step li {
+      margin-bottom: 8px;
+    }
+    
+    .permissions-list {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+      gap: 10px;
+      margin-top: 10px;
+    }
+    
+    .permission-item {
+      background-color: rgba(66, 133, 244, 0.1);
+      padding: 8px 12px;
+      border-radius: 4px;
+      font-size: 14px;
+    }
+    
+    .tab-container {
+      margin-bottom: 20px;
+    }
+    
+    .tab-buttons {
+      display: flex;
+      border-bottom: 1px solid #ddd;
+      margin-bottom: 20px;
+    }
+    
+    .tab-button {
+      padding: 10px 20px;
+      background: none;
+      border: none;
+      cursor: pointer;
+      color: var(--gray);
+      font-weight: 500;
+      border-bottom: 3px solid transparent;
+    }
+    
+    .tab-button.active {
+      color: var(--primary);
+      border-bottom-color: var(--primary);
+    }
+    
+    .tab-content {
+      display: none;
+    }
+    
+    .tab-content.active {
+      display: block;
+    }
+    
     @keyframes spin {
       0% { transform: rotate(0deg); }
       100% { transform: rotate(360deg); }
@@ -199,43 +305,289 @@
         flex-direction: column;
         gap: 5px;
       }
+      /* Style for hamburger button */
+.hamburger-menu {
+  position: fixed;
+  top: 10px;
+  left: 10px;
+  z-index: 1001; /* Stay on top */
+}
+
+.hamburger-button {
+  font-size: 28px;
+  background: #3366cc;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  padding: 10px;
+  cursor: pointer;
+}
+
+/* Hamburger nav dropdown */
+#hamburgerNav {
+  display: none;
+  flex-direction: column;
+  background-color: white;
+  position: fixed;
+  top: 55px; /* below button */
+  left: 10px;
+  border-radius: 8px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+  z-index: 1000;
+  width: 180px;
+}
+
+#hamburgerNav .tab-button {
+  padding: 12px 16px;
+  text-align: left;
+  border: none;
+  background: none;
+  color: #333;
+  font-size: 16px;
+  width: 100%;
+  cursor: pointer;
+}
+
+#hamburgerNav .tab-button:hover {
+  background-color: #f5f5f5;
+}
+
+/* Prevent content from being overlapped (optional spacing below menu) */
+.content {
+  padding-top: 80px;
+}
+     .hamburger-menu {
+  position: fixed;
+  top: 10px;
+  left: 10px;
+  z-index: 999;
+}
+
+.hamburger-button {
+  font-size: 28px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: white;
+}
+      #hamburgerNav {
+  display: none;
+  flex-direction: column;
+  background-color: white;
+  position: fixed;
+  top: 60px; /* Just below the hamburger button */
+  left: 10px;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+  z-index: 998;
+}
+
+#hamburgerNav .tab-button {
+  padding: 10px 20px;
+  border: none;
+  background: none;
+  text-align: left;
+  width: 100%;
+  color: black;
+}
+
+#hamburgerNav .tab-button:hover {
+  background-color: #f0f0f0;
+}
+      @media screen and (max-width: 768px) {
+  .tab-bar {
+    display: none;
+  }
+
+  .hamburger-menu {
+    display: block;
+  }
+}
+
+@media screen and (min-width: 769px) {
+  .hamburger-menu {
+    display: none;
+  }
+}
+      .permissions-list {
+        grid-template-columns: 1fr;
+      }
     }
   </style>
 </head>
+<footer style="text-align: center; margin-top: 40px; color: var(--gray); font-size: 24px;">
+  Created by Hassan, idea from Suleiman
+</footer>
+<!-- Hamburger Button and Menu -->
+<div class="hamburger-menu">
+  <button class="hamburger-button" onclick="toggleHamburger()">☰</button>
+  <nav id="hamburgerNav" class="hamburger-nav">
+    <a href="#setup" onclick="showTab('setup'); toggleHamburger()">Setup</a>
+    <a href="#tutorial" onclick="showTab('tutorial'); toggleHamburger()">Tutorial</a>
+    <a href="#permissions" onclick="showTab('permissions'); toggleHamburger()">Permissions</a>
+  </nav>
+</div>
 <body>
   <div class="container">
     <h1>Facebook Bot Setup</h1>
     <p class="description">Configure your Messenger bot with Gemini AI integration</p>
     
-    <form id="botForm">
-      <div class="form-group">
-        <label for="verifyToken">Verify Token</label>
-        <input type="text" id="verifyToken" required placeholder="Your webhook verification token">
+    <div class="tab-container">
+      <div class="tab-buttons">
+        <button class="tab-button active" data-tab="setup">Bot Setup</button>
+        <button class="tab-button" data-tab="tutorial">Tutorial</button>
+        <button class="tab-button" data-tab="permissions">Permissions</button>
       </div>
       
-      <div class="form-group">
-        <label for="pageAccessToken">Page Access Token</label>
-        <input type="text" id="pageAccessToken" required placeholder="EAA... (long token)">
+      <div id="setup" class="tab-content active">
+        <div class="credit-counter" id="creditCounter">
+          You have <span id="credits">5</span> credits remaining (3 bots max)
+        </div>
+        
+        <form id="botForm">
+          <div class="form-group">
+            <label for="pageId">Facebook Page ID</label>
+            <input type="text" id="pageId" required placeholder="1234567890">
+          </div>
+          
+          <div class="form-group">
+            <label for="verifyToken">Verify Token</label>
+            <input type="text" id="verifyToken" required placeholder="Your webhook verification token">
+          </div>
+          
+          <div class="form-group">
+            <label for="pageAccessToken">Page Access Token</label>
+            <input type="text" id="pageAccessToken" required placeholder="EAA... (long token)">
+          </div>
+          
+          <div class="form-group">
+            <label for="geminiKey">Gemini API Key</label>
+            <input type="text" id="geminiKey" required placeholder="AIza... (your Google API key)">
+          </div>
+          
+          <button type="submit" id="submitBtn">Save Bot Configuration</button>
+          
+          <div id="status" class="status"></div>
+        </form>
+        
+        <div class="loading" id="loading">
+          <div class="spinner"></div>
+          <p>Loading...</p>
+        </div>
+        
+        <div class="bot-list" id="botList">
+          <h2>Your Configured Bots</h2>
+          <div id="botsContainer"></div>
+        </div>
       </div>
       
-      <div class="form-group">
-        <label for="geminiKey">Gemini API Key</label>
-        <input type="text" id="geminiKey" required placeholder="AIza... (your Google API key)">
+      <div id="tutorial" class="tab-content">
+        <div class="tutorial">
+          <h3>How to Create a Facebook Messenger Bot</h3>
+          
+          <div class="tutorial-step">
+            <h4>Step 1: Create a Facebook App</h4>
+              <img src="https://i.ibb.co/JwTPCjNc/Screenshot-20250527-024812-Via.png" alt="Facebook App Creation" style="max-width:100%; border-radius: 6px; margin: 10px 0;">
+  <ol>
+            <ol>
+              <li>Go to <a href="https://developers.facebook.com/" target="_blank">Facebook Developers</a></li>
+              <li>Click "My Apps" → "Create App"</li>
+              <li>Select "Business" as the app type</li>
+              <li>Enter your app name and contact email</li>
+              <li>Complete the security check</li>
+            </ol>
+          </div>
+          
+          <div class="tutorial-step">
+            <h4>Step 2: Add Messenger Product</h4>
+            <ol>
+              <li>In your app dashboard, click "Add Product"</li>
+              <li>Select "Messenger" from the products list</li>
+              <li>Click "Set Up" on the Messenger card</li>
+            </ol>
+          </div>
+          
+          <div class="tutorial-step">
+            <h4>Step 3: Generate Access Token</h4>
+            <ol>
+              <li>Under "Access Tokens", select your Facebook Page</li>
+              <li>Click "Generate Token" (you'll need admin access to the page)</li>
+              <li>Copy the generated Page Access Token (this is your long "EAA..." token)</li>
+            </ol>
+          </div>
+          
+          <div class="tutorial-step">
+            <h4>Step 4: Set Up Webhooks</h4>
+            <ol>
+              <li>In the Messenger settings, click "Edit" under Webhooks</li>
+              <li>Click "Add Callback URL"</li>
+              <li>Enter your webhook URL (provided by this setup tool)</li>
+              <li>Enter a Verify Token (can be any string you choose)</li>
+              <li>Subscribe to these events:
+                <ul>
+                  <li>messages</li>
+                  <li>messaging_postbacks</li>
+                  <li>messaging_optins</li>
+                  <li>message_deliveries</li>
+                  <li>message_reads</li>
+                </ul>
+              </li>
+            </ol>
+          </div>
+          
+          <div class="tutorial-step">
+            <h4>Step 5: Get Your Gemini API Key</h4>
+            <ol>
+              <li>Go to <a href="https://ai.google.dev/" target="_blank">Google AI Studio</a></li>
+              <li>Create a new project or select an existing one</li>
+              <li>Navigate to "API Keys" in the left menu</li>
+              <li>Click "Create API Key" and copy the key (starts with "AIza...")</li>
+            </ol>
+          </div>
+        </div>
       </div>
       
-      <button type="submit">Save Bot Configuration</button>
-      
-      <div id="status" class="status"></div>
-    </form>
-    
-    <div class="loading" id="loading">
-      <div class="spinner"></div>
-      <p>Loading...</p>
-    </div>
-    
-    <div class="bot-list" id="botList">
-      <h2>Your Configured Bots</h2>
-      <div id="botsContainer"></div>
+      <div id="permissions" class="tab-content">
+        <div class="tutorial">
+          <h3>Required Facebook Permissions</h3>
+          
+          <div class="tutorial-step">
+            <h4>Page Permissions</h4>
+            <div class="permissions-list">
+              <div class="permission-item">manage_pages</div>
+              <div class="permission-item">pages_messaging</div>
+              <div class="permission-item">pages_show_list</div>
+              <div class="permission-item">pages_messaging_subscriptions</div>
+            </div>
+            <p>These permissions allow your bot to send and receive messages on behalf of your page.</p>
+          </div>
+          
+          <div class="tutorial-step">
+            <h4>Webhook Subscriptions</h4>
+            <p>Your webhook should be subscribed to these events:</p>
+            <div class="permissions-list">
+              <div class="permission-item">messages</div>
+              <div class="permission-item">messaging_postbacks</div>
+              <div class="permission-item">messaging_optins</div>
+              <div class="permission-item">message_deliveries</div>
+              <div class="permission-item">message_reads</div>
+            </div>
+          </div>
+          
+          <div class="tutorial-step">
+  <h4>Step 1: Configure App Basic Settings</h4>
+  <ol>
+    <li>Go to your app’s <strong>Settings > Basic</strong> section on the <a href="https://developers.facebook.com/apps/" target="_blank">Meta for Developers Dashboard</a>.</li>
+    <li>Enter your <strong>Privacy Policy URL</strong>:  
+      <br><code>https://similartoolz.com/privacy</code>
+    </li>
+    <li>Upload your <strong>App Icon</strong> (minimum 1024x1024 pixels).</li>
+    <li>Click <strong>Save Changes</strong>.</li>
+    <li>Switch your app status from <strong>In Development</strong> to <strong>Live</strong> using the toggle at the top.</li>
+  </ol>
+</div>
+        </div>
+      </div>
     </div>
   </div>
 
@@ -245,14 +597,46 @@
       const statusEl = document.getElementById('status');
       const loadingEl = document.getElementById('loading');
       const botsContainer = document.getElementById('botsContainer');
+      const creditCounter = document.getElementById('creditCounter');
+      const creditsEl = document.getElementById('credits');
+      const submitBtn = document.getElementById('submitBtn');
       
-      // Load existing bots
+      // Tab functionality
+      const tabButtons = document.querySelectorAll('.tab-button');
+      const tabContents = document.querySelectorAll('.tab-content');
+      
+      tabButtons.forEach(button => {
+        button.addEventListener('click', () => {
+          const tabId = button.getAttribute('data-tab');
+          
+          // Update active tab button
+          tabButtons.forEach(btn => btn.classList.remove('active'));
+          button.classList.add('active');
+          
+          // Update active tab content
+          tabContents.forEach(content => content.classList.remove('active'));
+          document.getElementById(tabId).classList.add('active');
+        });
+      });
+      
+      // Initialize credits (5 credits = 3 bots max)
+      let credits = 5;
+      let botCount = 0;
+      
+      // Load existing bots and update credits
       loadBots();
       
       // Form submission
       form.addEventListener('submit', async (e) => {
         e.preventDefault();
         
+        // Check if user has enough credits
+        if (botCount >= 3) {
+          showError('You have reached the maximum number of bots (3). Delete existing bots to create new ones.');
+          return;
+        }
+        
+        const pageId = document.getElementById('pageId').value.trim();
         const verifyToken = document.getElementById('verifyToken').value.trim();
         const pageAccessToken = document.getElementById('pageAccessToken').value.trim();
         const geminiKey = document.getElementById('geminiKey').value.trim();
@@ -262,7 +646,7 @@
         statusEl.textContent = '';
         
         // Validate inputs
-        if (!verifyToken || !pageAccessToken || !geminiKey) {
+        if (!pageId || !verifyToken || !pageAccessToken || !geminiKey) {
           showError('All fields are required');
           return;
         }
@@ -276,6 +660,7 @@
               'Content-Type': 'application/json'
             },
             body: JSON.stringify({
+              pageId,
               verifyToken,
               pageAccessToken,
               geminiKey
@@ -287,11 +672,16 @@
             throw new Error(error);
           }
           
-          // Clear form
-          form.reset();
+          // Deduct credits (2 credits per bot)
+          credits -= 2;
+          botCount++;
+          updateCredits();
           
           // Show success
-          showSuccess('Bot configuration saved successfully!');
+          showSuccess('Bot configuration saved successfully! 2 credits deducted.');
+          
+          // Clear form
+          form.reset();
           
           // Refresh bot list
           loadBots();
@@ -301,6 +691,20 @@
           hideLoading();
         }
       });
+      
+      // Function to update credit display
+      function updateCredits() {
+        creditsEl.textContent = credits;
+        
+        // Disable form if no credits left
+        if (botCount >= 3) {
+          submitBtn.disabled = true;
+          creditCounter.innerHTML = 'You have reached your maximum of 3 bots. Delete existing bots to create new ones.';
+          creditCounter.className = 'credit-counter info';
+        } else {
+          submitBtn.disabled = false;
+        }
+      }
       
       // Function to show loading state
       function showLoading() {
@@ -337,6 +741,9 @@
           
           const data = await response.json();
           const bots = data.bots || [];
+          botCount = bots.length;
+          credits = 5 - (botCount * 2);
+          updateCredits();
           
           if (bots.length === 0) {
             botsContainer.innerHTML = '<p>No bots configured yet. Add one using the form above.</p>';
@@ -345,7 +752,8 @@
           
           botsContainer.innerHTML = bots.map(bot => `
             <div class="bot-card">
-              <h3>${bot.id || 'Default Bot'}</h3>
+              <h3>${bot.pageId || 'Unknown Page'}</h3>
+              <p><strong>Bot ID:</strong> ${bot.id}</p>
               <div class="bot-meta">
                 <span title="Verify Token">🔑 ${bot.verifyToken.substring(0, 4)}...</span>
                 <span title="Access Token">🔑 ${bot.pageAccessToken.substring(0, 4)}...</span>
@@ -375,6 +783,11 @@
                   throw new Error('Failed to delete bot');
                 }
                 
+                // Refund 2 credits
+                credits += 2;
+                botCount--;
+                updateCredits();
+                
                 // Refresh the list
                 loadBots();
               } catch (error) {
@@ -395,6 +808,33 @@
         }
       }
     });
+ 
+  function toggleHamburger() {
+    const nav = document.getElementById('hamburgerNav');
+    nav.style.display = nav.style.display === 'flex' ? 'none' : 'flex';
+  }
+
+  function showTab(tabId) {
+    const tabs = document.querySelectorAll('.tab-content');
+    const buttons = document.querySelectorAll('.tab-button');
+
+    tabs.forEach(tab => tab.classList.remove('active'));
+    buttons.forEach(btn => btn.classList.remove('active'));
+
+    const activeTab = document.getElementById(tabId);
+    if (activeTab) activeTab.classList.add('active');
+
+    const matchingBtn = document.querySelector(`.tab-button[data-tab="${tabId}"]`);
+    if (matchingBtn) matchingBtn.classList.add('active');
+  }
+
+document.addEventListener('click', function (event) {
+  const nav = document.getElementById('hamburgerNav');
+  const btn = document.querySelector('.hamburger-button');
+  if (!nav.contains(event.target) && !btn.contains(event.target)) {
+    nav.style.display = 'none';
+  }
+});
   </script>
 </body>
 </html>

@@ -5,6 +5,7 @@ const fs = require('fs');
 const path = require('path');
 const { GoogleGenerativeAI } = require('@google/generative-ai');
 const axios = require('axios');
+const { v4: uuidv4 } = require('uuid');
 
 const app = express();
 const port = process.env.PORT || 3000;
@@ -43,7 +44,8 @@ db.serialize(() => {
     message TEXT NOT NULL,
     sender TEXT NOT NULL,
     message_type TEXT DEFAULT 'text',
-    metadata TEXT
+    metadata TEXT,
+    bot_id TEXT
   )`);
 
   db.run(`CREATE TABLE IF NOT EXISTS user_context (
@@ -51,7 +53,8 @@ db.serialize(() => {
     last_interaction DATETIME,
     conversation_state TEXT,
     user_preferences TEXT,
-    conversation_history TEXT
+    conversation_history TEXT,
+    bot_id TEXT
   )`);
 
   db.run(`CREATE TABLE IF NOT EXISTS message_logs (
@@ -61,12 +64,14 @@ db.serialize(() => {
     message_type TEXT,
     status TEXT,
     error_message TEXT,
-    metadata TEXT
+    metadata TEXT,
+    bot_id TEXT
   )`);
 
   // New table for token management
   db.run(`CREATE TABLE IF NOT EXISTS token_management (
-    page_id TEXT PRIMARY KEY,
+    bot_id TEXT PRIMARY KEY,
+    page_id TEXT,
     last_refresh DATETIME,
     expires_at DATETIME,
     refresh_token TEXT
@@ -111,7 +116,9 @@ if (!bots.some(bot => bot.id === "default-bot")) {
     id: "default-bot",
     verifyToken: DEFAULT_VERIFY_TOKEN,
     pageAccessToken: "DUMMY_TOKEN",
-    geminiKey: "DUMMY_KEY"
+    geminiKey: "DUMMY_KEY",
+    pageId: "default",
+    createdAt: new Date().toISOString()
   });
   saveBots();
 }
@@ -174,7 +181,7 @@ async function validateAccessToken(token) {
   }
 }
 
-async function refreshAccessToken(refreshToken) {
+async function refreshAccessToken(botId, refreshToken) {
   try {
     if (!process.env.FB_APP_ID || !process.env.FB_APP_SECRET) {
       throw new Error('Facebook App ID and Secret not configured in environment variables');
@@ -193,14 +200,17 @@ async function refreshAccessToken(refreshToken) {
     const expiresAt = new Date(Date.now() + expires_in * 1000).toISOString();
 
     // Update the bot configuration
-    bots[0].pageAccessToken = access_token;
-    await saveBots();
+    const bot = bots.find(b => b.id === botId);
+    if (bot) {
+      bot.pageAccessToken = access_token;
+      await saveBots();
+    }
 
     // Update refresh data
-    tokenRefreshData['default'] = {
+    tokenRefreshData[botId] = {
       lastRefresh: new Date().toISOString(),
       expiresAt,
-      refreshToken: access_token
+      refreshToken
     };
     await saveTokenRefreshData();
 
@@ -212,18 +222,18 @@ async function refreshAccessToken(refreshToken) {
 }
 
 // Database operations
-function storeMessage(userId, message, sender, messageType = "text", metadata = null) {
+function storeMessage(userId, message, sender, botId, messageType = "text", metadata = null) {
   return new Promise((resolve, reject) => {
     db.run(
-      `INSERT INTO conversations (user_id, message, sender, message_type, metadata, timestamp)
-       VALUES (?, ?, ?, ?, ?, ?)`,
-      [userId, message, sender, messageType, JSON.stringify(metadata), getCurrentTime()],
+      `INSERT INTO conversations (user_id, message, sender, message_type, metadata, timestamp, bot_id) 
+       VALUES (?, ?, ?, ?, ?, ?, ?)`,
+      [userId, message, sender, messageType, JSON.stringify(metadata), getCurrentTime(), botId],
       function(err) {
         if (err) return reject(err);
-        
+
         db.get(
-          `SELECT conversation_history FROM user_context WHERE user_id = ?`,
-          [userId],
+          `SELECT conversation_history FROM user_context WHERE user_id = ? AND bot_id = ?`,
+          [userId, botId],
           (err, row) => {
             if (err) return reject(err);
             
@@ -240,9 +250,9 @@ function storeMessage(userId, message, sender, messageType = "text", metadata = 
             
             db.run(
               `INSERT OR REPLACE INTO user_context 
-               (user_id, last_interaction, conversation_history)
-               VALUES (?, ?, ?)`,
-              [userId, getCurrentTime(), JSON.stringify(limitedHistory)],
+               (user_id, last_interaction, conversation_history, bot_id)
+               VALUES (?, ?, ?, ?)`,
+              [userId, getCurrentTime(), JSON.stringify(limitedHistory), botId],
               (err) => {
                 if (err) return reject(err);
                 resolve();
@@ -255,11 +265,11 @@ function storeMessage(userId, message, sender, messageType = "text", metadata = 
   });
 }
 
-function getConversationHistory(userId) {
+function getConversationHistory(userId, botId) {
   return new Promise((resolve, reject) => {
     db.get(
-      `SELECT conversation_history FROM user_context WHERE user_id = ?`,
-      [userId],
+      `SELECT conversation_history FROM user_context WHERE user_id = ? AND bot_id = ?`,
+      [userId, botId],
       (err, row) => {
         if (err) return reject(err);
         resolve(row?.conversation_history ? JSON.parse(row.conversation_history) : []);
@@ -268,13 +278,13 @@ function getConversationHistory(userId) {
   });
 }
 
-function logMessageStatus(senderId, messageType, status, errorMessage = null, metadata = null) {
+function logMessageStatus(senderId, messageType, status, botId, errorMessage = null, metadata = null) {
   return new Promise((resolve, reject) => {
     db.run(
       `INSERT INTO message_logs 
-       (sender_id, message_type, status, error_message, metadata, timestamp)
-       VALUES (?, ?, ?, ?, ?, ?)`,
-      [senderId, messageType, status, errorMessage, JSON.stringify(metadata), getCurrentTime()],
+       (sender_id, message_type, status, error_message, metadata, timestamp, bot_id)
+       VALUES (?, ?, ?, ?, ?, ?, ?)`,
+      [senderId, messageType, status, errorMessage, JSON.stringify(metadata), getCurrentTime(), botId],
       (err) => {
         if (err) reject(err);
         else resolve();
@@ -286,12 +296,12 @@ function logMessageStatus(senderId, messageType, status, errorMessage = null, me
 // API Endpoints
 app.post('/set-tokens', async (req, res) => {
   try {
-    const { verifyToken, pageAccessToken, geminiKey, refreshToken } = req.body;
-    
-    if (!verifyToken || !pageAccessToken || !geminiKey) {
-      return res.status(400).send("Required fields: verifyToken, pageAccessToken, geminiKey");
+    const { pageId, verifyToken, pageAccessToken, geminiKey, refreshToken } = req.body;
+
+    if (!pageId || !verifyToken || !pageAccessToken || !geminiKey) {
+      return res.status(400).send("Required fields: pageId, verifyToken, pageAccessToken, geminiKey");
     }
-    
+
     // Validate Facebook token
     try {
       const isValid = await validateAccessToken(pageAccessToken);
@@ -301,22 +311,31 @@ app.post('/set-tokens', async (req, res) => {
     } catch (error) {
       return res.status(400).send(`Failed to validate Page Access Token: ${error.message}`);
     }
+
+    // Check if bot already exists for this page
+    const existingBotIndex = bots.findIndex(bot => bot.pageId === pageId);
     
-    // Update bot configuration
-    const bot = {
-      id: "default-bot",
+    const botData = {
+      id: existingBotIndex >= 0 ? bots[existingBotIndex].id : uuidv4(),
+      pageId,
       verifyToken,
       pageAccessToken,
       geminiKey,
-      createdAt: getCurrentTime()
+      createdAt: existingBotIndex >= 0 ? bots[existingBotIndex].createdAt : getCurrentTime(),
+      updatedAt: getCurrentTime()
     };
 
-    bots[0] = bot;
-    console.log(`🔄 Bot configuration updated`);
+    if (existingBotIndex >= 0) {
+      bots[existingBotIndex] = botData;
+    } else {
+      bots.push(botData);
+    }
+
+    console.log(`🔄 Bot configuration ${existingBotIndex >= 0 ? 'updated' : 'created'}`);
 
     // Save refresh token if provided
     if (refreshToken) {
-      tokenRefreshData['default'] = {
+      tokenRefreshData[botData.id] = {
         lastRefresh: new Date().toISOString(),
         expiresAt: new Date(Date.now() + 60 * 24 * 60 * 60 * 1000).toISOString(), // 60 days
         refreshToken
@@ -325,10 +344,50 @@ app.post('/set-tokens', async (req, res) => {
     }
 
     await saveBots();
-    res.send("✅ Bot configuration saved successfully!");
+    res.json({ 
+      success: true,
+      message: "✅ Bot configuration saved successfully!",
+      botId: botData.id
+    });
   } catch (error) {
     console.error('Error in /set-tokens:', error);
-    res.status(500).send("Internal server error");
+    res.status(500).json({ 
+      success: false,
+      message: "Internal server error"
+    });
+  }
+});
+
+app.delete('/delete-bot/:botId', async (req, res) => {
+  try {
+    const { botId } = req.params;
+
+    // Find the bot
+    const botIndex = bots.findIndex(bot => bot.id === botId);
+    if (botIndex === -1) {
+      return res.status(404).json({ success: false, message: "Bot not found" });
+    }
+
+    // Remove the bot
+    bots.splice(botIndex, 1);
+    await saveBots();
+
+    // Remove refresh token if exists
+    if (tokenRefreshData[botId]) {
+      delete tokenRefreshData[botId];
+      await saveTokenRefreshData();
+    }
+
+    res.json({ 
+      success: true,
+      message: "✅ Bot deleted successfully!"
+    });
+  } catch (error) {
+    console.error('Error in /delete-bot:', error);
+    res.status(500).json({ 
+      success: false,
+      message: "Internal server error"
+    });
   }
 });
 
@@ -346,7 +405,7 @@ app.get('/webhook', (req, res) => {
   });
 
   const matchingBot = bots.find(b => b.verifyToken === token);
-  
+
   if (mode === 'subscribe' && matchingBot) {
     console.log(`✅ Webhook verified for bot ${matchingBot.id}`);
     return res.status(200).send(challenge);
@@ -354,7 +413,7 @@ app.get('/webhook', (req, res) => {
 
   console.error('❌ Webhook verification failed', {
     reason: !mode ? 'Missing hub.mode' : 
-            !token ? 'Missing hub.verify_token' :
+            !token ? 'Missing hub.verify_token' : 
             !matchingBot ? 'No matching verify token found' : 'Unknown reason',
     receivedToken: token,
     expectedTokens: bots.map(b => b.verifyToken),
@@ -364,24 +423,32 @@ app.get('/webhook', (req, res) => {
   res.sendStatus(403);
 });
 
-// Enhanced sendFacebookMessage with token refresh
-async function sendFacebookMessage(recipientId, message, accessToken) {
+async function sendFacebookMessage(recipientId, message, botId) {
   try {
+    const bot = bots.find(b => b.id === botId);
+    if (!bot) {
+      throw new Error('Bot configuration not found');
+    }
+
     // First validate the token
-    const isValid = await validateAccessToken(accessToken);
-    
+    const isValid = await validateAccessToken(bot.pageAccessToken);
+
     if (!isValid) {
       console.log('⚠️ Token invalid or expired. Attempting refresh...');
       
       // Check if we have a refresh token
-      const refreshInfo = tokenRefreshData['default'];
+      const refreshInfo = tokenRefreshData[botId];
       if (refreshInfo && refreshInfo.refreshToken) {
         try {
-          const newToken = await refreshAccessToken(refreshInfo.refreshToken);
+          const newToken = await refreshAccessToken(botId, refreshInfo.refreshToken);
           console.log('🔄 Successfully refreshed access token');
           
+          // Update bot with new token
+          bot.pageAccessToken = newToken;
+          await saveBots();
+          
           // Retry with new token
-          return await sendFacebookMessage(recipientId, message, newToken);
+          return await sendFacebookMessage(recipientId, message, botId);
         } catch (refreshError) {
           console.error('❌ Failed to refresh token:', refreshError);
           throw new Error('Access token expired and refresh failed. Please update the token.');
@@ -390,27 +457,34 @@ async function sendFacebookMessage(recipientId, message, accessToken) {
         throw new Error('Access token expired and no refresh token available. Please update the token.');
       }
     }
-    
+
     // Process message sending
     const messages = typeof message === 'string' ? splitLongMessage(message) : [message];
-    
+
     for (const msg of messages) {
+      const messageData = {
+        messaging_type: "RESPONSE",
+        recipient: {
+          id: recipientId
+        },
+        message: {
+          text: msg
+        }
+      };
+
       const response = await axios.post(
         `https://graph.facebook.com/v19.0/me/messages`,
+        messageData,
         {
-          recipient: { id: recipientId },
-          message: { text: msg }
-        },
-        {
-          params: { access_token: accessToken },
+          params: { access_token: bot.pageAccessToken },
           headers: { 'Content-Type': 'application/json' }
         }
       );
       
-      await logMessageStatus(recipientId, 'text', 'success', null, response.data);
+      await logMessageStatus(recipientId, 'text', 'success', botId, null, response.data);
       console.log(`📨 Message sent to ${recipientId}`);
     }
-    
+
     return true;
   } catch (error) {
     console.error('❌ Error sending message:', error.response?.data?.error?.message || error.message);
@@ -418,6 +492,7 @@ async function sendFacebookMessage(recipientId, message, accessToken) {
       recipientId,
       'text',
       'failed',
+      botId,
       error.response?.data?.error?.message || error.message,
       error.response?.data
     );
@@ -429,7 +504,7 @@ async function sendFacebookMessage(recipientId, message, accessToken) {
 app.post('/webhook', async (req, res) => {
   try {
     console.log('📩 Received webhook event:', req.body);
-    
+
     const body = req.body;
     if (body.object !== 'page') {
       console.warn('⚠️ Received non-page object:', body.object);
@@ -437,6 +512,9 @@ app.post('/webhook', async (req, res) => {
     }
 
     for (const entry of body.entry) {
+      const webhook_event = entry.messaging[0];
+      const senderPsid = webhook_event.sender.id;
+      
       const messaging = entry.messaging;
       if (!messaging || !Array.isArray(messaging)) continue;
 
@@ -449,8 +527,9 @@ app.post('/webhook', async (req, res) => {
 
         console.log(`Message from ${senderId}:`, messageText || '[non-text message]');
 
-        // Find bot config
-        const bot = bots[0]; // Using single bot configuration
+        // Find bot config - we'll use the first one for simplicity
+        // In production, you might want to determine which bot should handle this message
+        const bot = bots[0];
         if (!bot) {
           console.error('No bot config found');
           continue;
@@ -463,12 +542,14 @@ app.post('/webhook', async (req, res) => {
               // Handle command
               const command = messageText.slice(PREFIX.length).trim().split(' ')[0];
               const response = `Command received: ${command}`;
-              await sendFacebookMessage(senderId, response, bot.pageAccessToken);
+              
+              await sendFacebookMessage(senderId, response, bot.id);
             } else {
               // Handle regular message
               const reply = await generateGeminiReply(messageText, bot.geminiKey);
               console.log('Sending reply:', reply);
-              await sendFacebookMessage(senderId, reply, bot.pageAccessToken);
+              
+              await sendFacebookMessage(senderId, reply, bot.id);
             }
           } catch (error) {
             console.error('Reply failed:', error);
@@ -476,11 +557,11 @@ app.post('/webhook', async (req, res) => {
         } else if (attachments.length > 0) {
           // Handle attachments
           const response = "I received your attachment! (Attachment processing would happen here)";
-          await sendFacebookMessage(senderId, response, bot.pageAccessToken);
+          await sendFacebookMessage(senderId, response, bot.id);
         }
       }
     }
-    
+
     res.status(200).send('EVENT_RECEIVED');
   } catch (error) {
     console.error('Webhook processing error:', error);
@@ -492,19 +573,17 @@ async function generateGeminiReply(userText, geminiKey, history = []) {
   try {
     console.log('🧠 Generating Gemini reply...');
     const genAI = new GoogleGenerativeAI(geminiKey);
-    const model = genAI.getGenerativeModel({ model: 'gemini-pro' });
-    
+    const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
+
     let prompt = "Your name is KORA AI. Reply with soft vibes. Here's our conversation so far:\n\n";
-    
     history.forEach(msg => {
       prompt += `${msg.role === 'user' ? 'User' : 'KORA AI'}: ${msg.content}\n`;
     });
-    
     prompt += `\nUser: ${userText}\nKORA AI:`;
-    
+
     const result = await model.generateContent(prompt);
     const response = await result.response.text();
-    
+
     console.log('✅ Gemini response generated successfully');
     return response;
   } catch (e) {
@@ -533,17 +612,18 @@ app.get('/health', (req, res) => {
 app.get('/history', async (req, res) => {
   const userId = req.query.userId;
   const adminCode = req.query.adminCode;
-  
+  const botId = req.query.botId;
+
   if (!userId) {
     return res.status(400).json({ error: "userId parameter is required" });
   }
-  
+
   if (!adminCode || adminCode !== "ICU14CU") {
     return res.status(403).json({ error: "Invalid admin code" });
   }
-  
+
   try {
-    const history = await getConversationHistory(userId);
+    const history = await getConversationHistory(userId, botId);
     res.json({ userId, conversationHistory: history });
   } catch (error) {
     console.error('Error fetching history:', error);
@@ -561,20 +641,20 @@ app.listen(port, () => {
   console.log(`🚀 Server is running at http://localhost:${port}`);
   console.log('🔐 Default verify token:', DEFAULT_VERIFY_TOKEN);
   console.log('🤖 Configured bots:', bots.filter(b => b.pageAccessToken !== "DUMMY_TOKEN").length);
-  
+
   // Validate tokens on startup
   bots.forEach(async (bot) => {
     if (bot.pageAccessToken !== "DUMMY_TOKEN") {
       try {
         const isValid = await validateAccessToken(bot.pageAccessToken);
-        console.log(`ℹ️ Token status: ${isValid ? 'Valid' : 'Invalid'}`);
-        
-        if (!isValid && tokenRefreshData['default']?.refreshToken) {
-          console.log(`Attempting to refresh token...`);
-          await refreshAccessToken(tokenRefreshData['default'].refreshToken);
+        console.log(`ℹ️ Token status for bot ${bot.id}: ${isValid ? 'Valid' : 'Invalid'}`);
+
+        if (!isValid && tokenRefreshData[bot.id]?.refreshToken) {
+          console.log(`Attempting to refresh token for bot ${bot.id}...`);
+          await refreshAccessToken(bot.id, tokenRefreshData[bot.id].refreshToken);
         }
       } catch (error) {
-        console.error(`Error checking token:`, error.message);
+        console.error(`Error checking token for bot ${bot.id}:`, error.message);
       }
     }
   });

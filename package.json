@@ -16,7 +16,9 @@
     "body-parser": "^2.2.0",
     "express": "^5.1.0",
     "fs-extra": "^11.3.0",
+    "request": "^2.88.2",
     "sqlite3": "^5.1.7",
+    "uuid": "^11.1.0",
     "yt-search": "^2.6.1"
   }
 }
