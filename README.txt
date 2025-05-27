@@ -39,5 +39,5 @@ Example command:
 ### 1. Clone the Repository
 
 ```bash
-git clone https://github.com/your-username/facebook-messenger-gemini-bot.git
+git clone https://github.com/Horror-king/Yau-5-messenger-page-bot.git
 cd facebook-messenger-gemini-bot
